@@ -1,0 +1,20 @@
+# --- Symfony / api ---
+api/vendor/
+api/var/
+api/.env.local
+api/.env.local.php
+api/.env.*.local
+api/config/secrets/prod/prod.decrypt.private.php
+api/public/bundles/
+api/config/jwt/*.pem
+
+# --- React / app ---
+app/node_modules/
+app/dist/
+app/.env.local
+
+# --- Général ---
+.DS_Store
+*.log
+.idea/
+.vscode/

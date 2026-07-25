@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vezra_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vezra
+      POSTGRES_USER: vezra
+      POSTGRES_PASSWORD: vezra
+    ports:
+      - "5432:5432"
+    volumes:
+      - vezra_pgdata:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    container_name: vezra_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  vezra_pgdata:

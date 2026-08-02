@@ -231,4 +231,78 @@ class ChallengeController extends AbstractController
 
         return new JsonResponse($data);
     }
+    #[Route('/api/challenges/{id}', name: 'challenge_update', methods: ['PUT'])]
+    public function update(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager
+    ): JsonResponse {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $challenge = $entityManager->getRepository(Challenge::class)->find($id);
+
+        if (!$challenge) {
+            return new JsonResponse(['error' => 'Défi introuvable'], 404);
+        }
+
+        if ($challenge->getOwner() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        // On ne permet de modifier que ces champs — pas le type, ni l'owner,
+        // pour éviter d'incohérences avec la progression déjà enregistrée
+        if (isset($data['titre'])) {
+            $challenge->setTitre($data['titre']);
+        }
+        if (isset($data['dateLimite'])) {
+            $challenge->setDateLimite(new \DateTimeImmutable($data['dateLimite']));
+        }
+        if (isset($data['statut'])) {
+            $statutsValides = ['en_cours', 'termine', 'abandonne', 'en_pause'];
+            if (!in_array($data['statut'], $statutsValides, true)) {
+                return new JsonResponse(['error' => 'statut invalide'], 400);
+            }
+            $challenge->setStatut($data['statut']);
+        }
+
+        $entityManager->flush();
+
+        return new JsonResponse([
+            'id' => $challenge->getId(),
+            'titre' => $challenge->getTitre(),
+            'statut' => $challenge->getStatut(),
+            'dateLimite' => $challenge->getDateLimite()?->format('Y-m-d'),
+        ]);
+    }
+
+    #[Route('/api/challenges/{id}', name: 'challenge_delete', methods: ['DELETE'])]
+    public function delete(int $id, EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $challenge = $entityManager->getRepository(Challenge::class)->find($id);
+
+        if (!$challenge) {
+            return new JsonResponse(['error' => 'Défi introuvable'], 404);
+        }
+
+        if ($challenge->getOwner() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
+        }
+
+// On supprime d'abord les entrées Progress liées, pour éviter la violation de contrainte
+        $progressEntries = $entityManager->getRepository(Progress::class)->findBy(['challenge' => $challenge]);
+        foreach ($progressEntries as $entry) {
+            $entityManager->remove($entry);
+        }
+
+        $entityManager->remove($challenge);
+        $entityManager->flush();
+
+        return new JsonResponse(null, 204);
+    }
 }

@@ -55,6 +55,22 @@ export async function createChallenge(data: {
   return response.data;
 }
 
+export async function updateChallenge(
+  id: number,
+  data: {
+    titre?: string;
+    dateLimite?: string | null;
+    statut?: Challenge['statut'];
+  }
+): Promise<Challenge> {
+  const response = await client.put(`/challenges/${id}`, data);
+  return response.data;
+}
+
+export async function deleteChallenge(id: number): Promise<void> {
+  await client.delete(`/challenges/${id}`);
+}
+
 // Récupère l'historique de progression d'un défi
 export async function getProgressHistory(challengeId: number): Promise<ProgressEntry[]> {
   const response = await client.get(`/challenges/${challengeId}/progress`);

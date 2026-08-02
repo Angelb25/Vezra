@@ -18,7 +18,7 @@ export default function Login() {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/challenges');
     } catch (err: any) {
       // Lexik renvoie un message générique volontairement vague
       // ("Invalid credentials") pour ne pas indiquer si l'email existe ou non —

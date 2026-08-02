@@ -202,4 +202,33 @@ class ChallengeController extends AbstractController
         // occurrence et frequence : on compte simplement le nombre d'entrées
         return count($entries);
     }
+
+    #[Route('/api/challenges/{id}/progress', name: 'challenge_progress_history', methods: ['GET'])]
+    public function progressHistory(int $id, EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $challenge = $entityManager->getRepository(Challenge::class)->find($id);
+
+        if (!$challenge) {
+            return new JsonResponse(['error' => 'Défi introuvable'], 404);
+        }
+
+        if ($challenge->getOwner() !== $user) {
+            return new JsonResponse(['error' => 'Accès refusé'], 403);
+        }
+
+        $entries = $entityManager->getRepository(Progress::class)
+            ->findBy(['challenge' => $challenge], ['date' => 'DESC']);
+
+        $data = array_map(fn(Progress $p) => [
+            'id' => $p->getId(),
+            'valeur' => $p->getValeur(),
+            'date' => $p->getDate()->format('Y-m-d H:i:s'),
+            'note' => $p->getNote(),
+        ], $entries);
+
+        return new JsonResponse($data);
+    }
 }

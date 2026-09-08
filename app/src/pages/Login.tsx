@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../components/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -27,7 +28,14 @@ export default function Login() {
 
   return (
     <div className="page">
-      <h1>Se connecter</h1>
+      <div className="auth-header">
+        <Logo size={58} withText />
+      </div>
+      <div className="auth-intro">
+        <p className="auth-kicker">TON RYTHME. TON DÉFI.</p>
+        <h1>Prêt à bouger ?</h1>
+        <p className="text-muted">Retrouve tes objectifs et continue ta progression.</p>
+      </div>
 
       <form onSubmit={handleSubmit}>
         <div className="form-field">
@@ -47,7 +55,7 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="text-muted" style={{ marginTop: 16, textAlign: 'center' }}>
+      <p className="text-muted auth-footer">
         Pas encore de compte ? <Link to="/register">S'inscrire</Link>
       </p>
     </div>

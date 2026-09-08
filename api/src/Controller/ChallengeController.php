@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Progress;
 use App\Service\GamificationService;
+use App\Service\BadgeService;
 
 class ChallengeController extends AbstractController
 {
@@ -127,7 +128,7 @@ class ChallengeController extends AbstractController
         int $id,
         Request $request,
         EntityManagerInterface $entityManager,
-        GamificationService $gamificationService
+        BadgeService $badgeService
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
@@ -176,20 +177,24 @@ class ChallengeController extends AbstractController
             $xpGagne += 150;
         }
 
-        $user->setXpTotal(($user->getXpTotal() ?? 0) + $xpGagne);
-        $entityManager->flush();
+        $user->setXpTotal($user->getXpTotal() + $xpGagne);
+        $user->setNiveau((int) floor($user->getXpTotal() / 200) + 1);
 
-        $gamificationService->refreshUserStats($user);
+        $entityManager->flush(); // on flush avant la vérification des badges, pour que les stats soient à jour
+
+        $nouveauxBadges = $badgeService->checkAndUnlockBadges($user, $entityManager);
+        $entityManager->flush(); // sauvegarde les éventuels badges débloqués + XP bonus
 
         return new JsonResponse([
-                    'id' => $progress->getId(),
-                    'valeur' => $progress->getValeur(),
-                    'date' => $progress->getDate()->format('Y-m-d H:i:s'),
-                    'progressionActuelle' => $progressionActuelle,
-                    'objectif' => $objectif,
-                    'pourcentage' => min(100, round(($progressionActuelle / $objectif) * 100)),
-                    'statutDefi' => $challenge->getStatut(),
-                ], 201);
+            'progressionActuelle' => $progressionActuelle,
+            'objectif' => $objectif,
+            'pourcentage' => min(100, round(($progressionActuelle / $objectif) * 100)),
+            'statutDefi' => $challenge->getStatut(),
+            'xpGagne' => $xpGagne,
+            'xpTotal' => $user->getXpTotal(),
+            'niveau' => $user->getNiveau(),
+            'nouveauxBadges' => array_map(fn($b) => ['id' => $b->getId(), 'nom' => $b->getNom(), 'icone' => $b->getIcone()], $nouveauxBadges),
+        ], 201);
     }
 
     /**

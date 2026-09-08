@@ -15,14 +15,10 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       await login(email, password);
       navigate('/challenges');
-    } catch (err: any) {
-      // Lexik renvoie un message générique volontairement vague
-      // ("Invalid credentials") pour ne pas indiquer si l'email existe ou non —
-      // bonne pratique de sécurité, on la garde côté front aussi.
+    } catch {
       setError('Email ou mot de passe incorrect.');
     } finally {
       setLoading(false);
@@ -30,40 +26,28 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
+    <div className="page">
       <h1>Se connecter</h1>
 
       <form onSubmit={handleSubmit}>
         <div className="form-field">
           <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+          <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
 
         <div className="form-field">
           <label htmlFor="password">Mot de passe</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
 
         {error && <p className="error-message">{error}</p>}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Connexion...' : 'Se connecter'}
         </button>
       </form>
 
-      <p>
+      <p className="text-muted" style={{ marginTop: 16, textAlign: 'center' }}>
         Pas encore de compte ? <Link to="/register">S'inscrire</Link>
       </p>
     </div>

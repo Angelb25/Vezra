@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Progress;
+use App\Service\GamificationService;
 
 class ChallengeController extends AbstractController
 {
@@ -125,7 +126,8 @@ class ChallengeController extends AbstractController
     public function addProgress(
         int $id,
         Request $request,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        GamificationService $gamificationService
     ): JsonResponse {
         /** @var User $user */
         $user = $this->getUser();
@@ -166,22 +168,28 @@ class ChallengeController extends AbstractController
         $progressionActuelle = $this->calculerProgression($challenge, $entityManager);
         $objectif = (float) $challenge->getObjectifValeur();
 
-        // Si l'objectif est atteint, on marque le défi comme terminé
-        if ($progressionActuelle >= $objectif) {
+        // Attribution d'XP : 30 XP pour l'ajout, +150 XP bonus si le défi se termine avec cette action
+        $xpGagne = 30;
+
+        if ($progressionActuelle >= $objectif && $challenge->getStatut() === 'en_cours') {
             $challenge->setStatut('termine');
+            $xpGagne += 150;
         }
 
+        $user->setXpTotal(($user->getXpTotal() ?? 0) + $xpGagne);
         $entityManager->flush();
 
+        $gamificationService->refreshUserStats($user);
+
         return new JsonResponse([
-            'id' => $progress->getId(),
-            'valeur' => $progress->getValeur(),
-            'date' => $progress->getDate()->format('Y-m-d H:i:s'),
-            'progressionActuelle' => $progressionActuelle,
-            'objectif' => $objectif,
-            'pourcentage' => min(100, round(($progressionActuelle / $objectif) * 100)),
-            'statutDefi' => $challenge->getStatut(),
-        ], 201);
+                    'id' => $progress->getId(),
+                    'valeur' => $progress->getValeur(),
+                    'date' => $progress->getDate()->format('Y-m-d H:i:s'),
+                    'progressionActuelle' => $progressionActuelle,
+                    'objectif' => $objectif,
+                    'pourcentage' => min(100, round(($progressionActuelle / $objectif) * 100)),
+                    'statutDefi' => $challenge->getStatut(),
+                ], 201);
     }
 
     /**
